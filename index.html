@@ -1,42 +1,57 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Mini App</title>
-    <!-- Le script officiel Telegram pour interagir avec l'application -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            text-align: center;
-            padding: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <h1>Bienvenue dans ma Mini App !</h1>
-    <p>Elle est connectée à Telegram.</p>
-    <button onclick="fermerApp()">Fermer l'app</button>
+import telebot
+import json
 
-    <script>
-        // Initialise l'application Telegram
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Ouvre l'application en grand écran
+# Ton token officiel pour Sicariobestshop_bot
+TOKEN = "8286266348:AAHcRixjSEL8gCrQbPPhZAuImds6FDqCgLY"
+bot = telebot.TeleBot(TOKEN)
 
-        function fermerApp() {
-            tg.close();
-        }
-    </script>
-</body>
-</html>
+# 1. Commande /start qui configure le bouton pour ouvrir la Mini App
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    
+    # /!\ REMPLACE CE LIEN par ton vrai lien GitHub Pages :
+    url_mini_app = "https://ton-pseudo.github.io/ma-mini-app/"
+    
+    web_app = telebot.types.WebAppInfo(url_mini_app)
+    btn = telebot.types.KeyboardButton(text="🛒 Ouvrir Vinland'Eats", web_app=web_app)
+    markup.add(btn)
+    
+    bot.reply_to(
+        message, 
+        "Bienvenue sur Vinland'Eats ! ⚡\nClique sur le bouton ci-dessous pour ouvrir la boutique et passer commande.", 
+        reply_markup=markup
+    )
+
+# 2. Réception des données quand l'utilisateur valide sur la Mini App
+@bot.message_handler(content_types=['web_app_data'])
+def handle_web_app_data(message):
+    try:
+        # On lit le JSON envoyé par tg.sendData() depuis le index.html
+        data = json.loads(message.web_app_data.data)
+        
+        action = data.get("action")
+        produit = data.get("produit")
+        methode = data.get("methode")
+        prix = data.get("prix")
+        
+        if action == "achat_compte":
+            # Message de confirmation envoyé par le bot dans le chat
+            msg_confirmation = (
+                f"📥 **Nouvelle commande enregistrée !**\n\n"
+                f"📦 **Produit :** {produit}\n"
+                f"💰 **Prix :** {prix}\n"
+                f"💳 **Moyen de paiement :** {methode}\n\n"
+                f"⚡ Génération de ton adresse de paiement {methode} en cours..."
+            )
+            bot.send_message(message.chat.id, msg_confirmation, parse_mode="Markdown")
+            
+            # C'est ici qu'on viendra greffer la suite (générer l'adresse crypto, etc.)
+
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Erreur de traitement : {e}")
+
+# Lancement du bot
+if __name__ == "__main__":
+    print("Le bot Sicariobestshop_bot est en ligne et écoute...")
+    bot.infinity_polling()
